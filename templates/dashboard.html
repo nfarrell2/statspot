@@ -1,24 +1,167 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <title>Dashboard</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Spotify Dashboard</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #121212;
+            color: white;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .container {
+            width: 90%;
+            max-width: 1000px;
+            background: #1e1e1e;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        }
+        h1 {
+            text-align: center;
+        }
+        .chart-container {
+            width: 48%;
+        }
+        .side-by-side {
+            display: flex;
+            justify-content: space-between;
+            gap: 20px;
+        }
+        .popularity-box {
+            width: 48%; 
+            height: 450px;
+            background-color: #282c34;
+            color: white;
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            font-size: 1.5rem;
+            position: relative;
+        }
+        ul {
+            list-style-type: decimal;
+            padding-left: 20px;
+            color: white;
+            list-style-position: inside;
+        }
+        li {
+            margin: 10px 0;
+        }
+        .list-container {
+            width: 45%;
+            text-align: center;
+        }
+    </style>
 </head>
 <body>
-    <h1>Spotify Dashboard</h1>
-    <a href="{{ url_for('logout') }}">Logout</a>
+    <div class="container">
+        <h1>Spotify Data Dashboard</h1>
+        <div class="side-by-side">
+            <!-- Top Artists List -->
+            <div class="list-container">
+                <h3>Top Artists</h3>
+                <ul id="topArtistsList"></ul>
+            </div>
+            <!-- Top Songs List -->
+            <div class="list-container">
+                <h3>Top Songs</h3>
+                <ul id="topSongsList"></ul>
+            </div>
+        </div>
+        <div class="side-by-side">
+            <div class="chart-container">
+                <canvas id="topGenresChart"></canvas>
+            </div>
+            <div class="popularity-box">
+                <div>
+                    <div>Average Popularity Score</div>
+                    <div class="percentage" id="popularityBoxPercentage">0%</div>
+                </div>
+            </div>
+        </div>
+    </div>
 
-    <h2>Recently Played Tracks</h2>
-    <ul>
-        {% for track in recent_tracks %}
-            <li>{{ track.track.name }} - {{ track.track.artists[0].name }}</li>
-        {% endfor %}
-    </ul>
+    <script>
+        const topArtists = {{ top_Artists | tojson }};
+        const topSongs = {{ top_Songs | tojson }};
+        const topGenres = {{ top_Genres | tojson }};
+        const avgPopularity = {{ avg_Popularity | tojson }};
+        
+        function createPieChart(ctx, data, label) {
+            new Chart(ctx, {
+                type: 'pie', // Change chart type to 'pie'
+                data: {
+                    labels: Object.keys(data), // Ensure data is in the correct format for labels
+                    datasets: [{
+                        label: label,
+                        data: Object.values(data), // Example data, you can replace this with actual popularity scores or other relevant data
+                        backgroundColor: generateRandomColors(Object.keys(data).length), // Random colors for each slice
+                        borderColor: 'rgba(255, 255, 255, 0.5)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            labels: { color: 'white' }
+                        },
+                        tooltip: {
+                            callbacks: {
+                                label: function(tooltipItem) {
+                                    // Customize the tooltip, if needed
+                                    return tooltipItem.label + ': ' + tooltipItem.raw;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
 
-    <h2>Your Playlists</h2>
-    <ul>
-        {% for playlist in playlists %}
-            <li>{{ playlist }}</li>
-        {% endfor %}
-    </ul>
+        // Helper function to generate random colors for the pie slices
+        function generateRandomColors(num) {
+            const colors = [];
+            for (let i = 0; i < num; i++) {
+                colors.push(`hsl(${Math.random() * 360}, 70%, 60%)`);
+            }
+            return colors;
+        }
+
+        function renderCharts() {
+            const topArtistsList = document.getElementById('topArtistsList');
+            topArtists.forEach((artist, index) => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${artist}`;
+                topArtistsList.appendChild(listItem);
+            });
+
+            const topSongsList = document.getElementById('topSongsList');
+            topSongs.forEach((song, index) => {
+                const listItem = document.createElement('li');
+                listItem.textContent = `${song.name} by ${song.artists}`;
+                topSongsList.appendChild(listItem);
+            });
+            createPieChart(document.getElementById('topGenresChart'), topGenres, 'Top Genres');
+            document.getElementById('topGenresChart').style.width = '500px';
+            document.getElementById('topGenresChart').style.height = '500px';
+            
+            const avgPopularityPercentage = (avgPopularity).toFixed(1);
+            document.getElementById('popularityBoxPercentage').textContent = `${avgPopularityPercentage}%`;
+        }
+
+        renderCharts();
+    </script>
 </body>
 </html>

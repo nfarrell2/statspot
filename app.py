@@ -30,7 +30,6 @@ def home():
 def login():
     scope_encoded = urllib.parse.quote(SCOPE)
     auth_url = f"{AUTH_URL}?client_id={CLIENT_ID}&response_type=code&redirect_uri={REDIRECT_URI}&scope={scope_encoded}"
-    print(auth_url)
     return redirect(auth_url)
     
 @app.route("/callback")
@@ -46,7 +45,7 @@ def callback():
     }
 
     response = requests.post(TOKEN_URL, data=token_data).json()
-    print(response)
+
     session.permanent = True
     session["access_token"] = response.get("access_token")
     session["refresh_token"] = response.get("refresh_token")
@@ -61,11 +60,34 @@ def dashboard():
     
     headers = {"Authorization" : f"Bearer {session['access_token']}"}
 
-    recent_tracks = requests.get(API_BASE_URL + "me/player/recently-played", headers=headers).json()
+    top_artists = requests.get(API_BASE_URL + "me/top/artists?limit=10", headers=headers).json()["items"]
 
-    playlists = requests.get(API_BASE_URL + "me/playlists", headers=headers).json()
+    top_tracks = requests.get(API_BASE_URL + "me/top/tracks?limit=10", headers=headers).json()["items"]
 
-    return render_template("dashboard.html", recent_tracks=recent_tracks.get("items", []), playlists=playlists.get("items", []))
+    top_genres = dict()
+
+    total_pop = 0
+
+    for i in range(len(top_artists)):
+        artist = top_artists[i]
+        for genre in artist["genres"]:
+            if genre in top_genres:
+                top_genres[genre] += 1
+            else:
+                top_genres[genre] = 1
+        total_pop += artist["popularity"]
+        top_artists[i] = top_artists[i]["name"]
+    
+    for i in range(len(top_tracks)):
+        track = top_tracks[i]
+        total_pop += track["popularity"]
+        top_tracks[i] = {k: v for k, v in top_tracks[i].items() if k in {"name", "artists"}}
+        for j in range(len(top_tracks[i]["artists"])):
+            top_tracks[i]["artists"][j] = top_tracks[i]["artists"][j]["name"]
+
+    avg_pop = (float) (total_pop / 20.0)
+
+    return render_template("dashboard.html", top_Artists=top_artists, top_Songs=top_tracks, top_Genres=top_genres, avg_Popularity=avg_pop)
 
 @app.route("/logout")
 def logout():
