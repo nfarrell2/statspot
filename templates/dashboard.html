@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Dashboard</title>
+</head>
+<body>
+    <h1>Spotify Dashboard</h1>
+    <a href="{{ url_for('logout') }}">Logout</a>
+
+    <h2>Recently Played Tracks</h2>
+    <ul>
+        {% for track in recent_tracks %}
+            <li>{{ track.track.name }} - {{ track.track.artists[0].name }}</li>
+        {% endfor %}
+    </ul>
+
+    <h2>Your Playlists</h2>
+    <ul>
+        {% for playlist in playlists %}
+            <li>{{ playlist }}</li>
+        {% endfor %}
+    </ul>
+</body>
+</html>
